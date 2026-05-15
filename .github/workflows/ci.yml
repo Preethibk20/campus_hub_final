@@ -37,7 +37,7 @@ jobs:
           cache: maven
 
       - name: Build and test (H2, test profile)
-        run: mvn verify --no-transfer-progress
+        run: mvn verify --no-transfer-progress -e
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/campushub_test
