@@ -269,12 +269,7 @@ const router = createBrowserRouter([
     path: '*',
     element: <Suspense fallback={<Loading />}><NotFoundPage /></Suspense>,
   },
-], {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true,
-  },
-})
+])
 
 // App Router Component
 const AppRouter: React.FC = () => {
