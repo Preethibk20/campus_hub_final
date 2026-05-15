@@ -82,19 +82,23 @@ public class WebSocketEventListener {
 
     @SuppressWarnings("unchecked")
     private void drainPendingNotifications(String userId) {
-        String key = "notif:" + userId;
-        Long size = redisTemplate.opsForList().size(key);
-        if (size == null || size == 0) return;
+        try {
+            String key = "notif:" + userId;
+            Long size = redisTemplate.opsForList().size(key);
+            if (size == null || size == 0) return;
 
-        List<Object> pending = redisTemplate.opsForList().range(key, 0, size - 1);
-        redisTemplate.delete(key);
+            List<Object> pending = redisTemplate.opsForList().range(key, 0, size - 1);
+            redisTemplate.delete(key);
 
-        if (pending != null) {
-            pending.forEach(n ->
-                    messagingTemplate.convertAndSendToUser(
-                            userId, "/queue/notifications", n));
+            if (pending != null) {
+                pending.forEach(n ->
+                        messagingTemplate.convertAndSendToUser(
+                                userId, "/queue/notifications", n));
+            }
+            log.debug("Drained {} pending notifications for user {}", size, userId);
+        } catch (Exception e) {
+            log.warn("Redis unavailable — skipping pending notification drain for user {}: {}", userId, e.getMessage());
         }
-        log.debug("Drained {} pending notifications for user {}", size, userId);
     }
 
     private void deliverMissedMessages(String userId, Instant since) {

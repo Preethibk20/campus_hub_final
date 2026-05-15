@@ -4,6 +4,8 @@ import com.campushub.exception.RateLimitException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimitInterceptor.class);
 
     @Value("${security.rate-limit.auth.max-attempts:5}")
     private int maxAttempts;
@@ -34,19 +38,25 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String ip  = getClientIp(request);
         String key = "ratelimit:" + ip + ":" + normalizeEndpoint(uri);
 
-        Long count = redisTemplate.opsForValue().increment(key);
-        if (count == null) count = 1L;
+        try {
+            Long count = redisTemplate.opsForValue().increment(key);
+            if (count == null) count = 1L;
 
-        if (count == 1) {
-            // First call — set TTL
-            redisTemplate.expire(key, windowSeconds, TimeUnit.SECONDS);
-        }
+            if (count == 1) {
+                // First call — set TTL
+                redisTemplate.expire(key, windowSeconds, TimeUnit.SECONDS);
+            }
 
-        if (count > maxAttempts) {
-            Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
-            long retryAfter = (ttl != null && ttl > 0) ? ttl : windowSeconds;
-            response.setHeader("Retry-After", String.valueOf(retryAfter));
-            throw new RateLimitException(retryAfter);
+            if (count > maxAttempts) {
+                Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+                long retryAfter = (ttl != null && ttl > 0) ? ttl : windowSeconds;
+                response.setHeader("Retry-After", String.valueOf(retryAfter));
+                throw new RateLimitException(retryAfter);
+            }
+        } catch (RateLimitException e) {
+            throw e; // Rethrow planned rate limit exceptions
+        } catch (Exception e) {
+            log.warn("Redis unavailable for rate limiting (fail-open) for IP {}: {}", ip, e.getMessage());
         }
 
         return true;
@@ -70,5 +80,3 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return request.getRemoteAddr();
     }
 }
-
-

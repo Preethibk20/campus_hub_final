@@ -24,10 +24,15 @@ public class GigResponseDTO {
     private String posterProfilePic;
     private long applicationCount;
     private boolean hasApplied;
+    private String userStatus; // PENDING, ACCEPTED, REJECTED
 
     public GigResponseDTO() {}
 
     public GigResponseDTO(String id, String title, String description, Gig.Category category, Gig.Type type, BigDecimal budget, List<String> skillsRequired, String postedBy, Gig.Status status, Instant createdAt, String posterName, String posterCollege, String posterBranch, String posterAcademicYear, String posterProfilePic, long applicationCount, boolean hasApplied) {
+        this(id, title, description, category, type, budget, skillsRequired, postedBy, status, createdAt, posterName, posterCollege, posterBranch, posterAcademicYear, posterProfilePic, applicationCount, hasApplied, null);
+    }
+
+    public GigResponseDTO(String id, String title, String description, Gig.Category category, Gig.Type type, BigDecimal budget, List<String> skillsRequired, String postedBy, Gig.Status status, Instant createdAt, String posterName, String posterCollege, String posterBranch, String posterAcademicYear, String posterProfilePic, long applicationCount, boolean hasApplied, String userStatus) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -45,6 +50,7 @@ public class GigResponseDTO {
         this.posterProfilePic = posterProfilePic;
         this.applicationCount = applicationCount;
         this.hasApplied = hasApplied;
+        this.userStatus = userStatus;
     }
 
     public String getId() { return id; }
@@ -81,6 +87,8 @@ public class GigResponseDTO {
     public void setApplicationCount(long applicationCount) { this.applicationCount = applicationCount; }
     public boolean isHasApplied() { return hasApplied; }
     public void setHasApplied(boolean hasApplied) { this.hasApplied = hasApplied; }
+    public String getUserStatus() { return userStatus; }
+    public void setUserStatus(String userStatus) { this.userStatus = userStatus; }
 
     public static GigResponseDTOBuilder builder() { return new GigResponseDTOBuilder(); }
 
@@ -102,6 +110,7 @@ public class GigResponseDTO {
         private String posterProfilePic;
         private long applicationCount;
         private boolean hasApplied;
+        private String userStatus;
 
         public GigResponseDTOBuilder id(String id) { this.id = id; return this; }
         public GigResponseDTOBuilder title(String title) { this.title = title; return this; }
@@ -120,9 +129,10 @@ public class GigResponseDTO {
         public GigResponseDTOBuilder posterProfilePic(String posterProfilePic) { this.posterProfilePic = posterProfilePic; return this; }
         public GigResponseDTOBuilder applicationCount(long applicationCount) { this.applicationCount = applicationCount; return this; }
         public GigResponseDTOBuilder hasApplied(boolean hasApplied) { this.hasApplied = hasApplied; return this; }
+        public GigResponseDTOBuilder userStatus(String userStatus) { this.userStatus = userStatus; return this; }
 
         public GigResponseDTO build() {
-            return new GigResponseDTO(id, title, description, category, type, budget, skillsRequired, postedBy, status, createdAt, posterName, posterCollege, posterBranch, posterAcademicYear, posterProfilePic, applicationCount, hasApplied);
+            return new GigResponseDTO(id, title, description, category, type, budget, skillsRequired, postedBy, status, createdAt, posterName, posterCollege, posterBranch, posterAcademicYear, posterProfilePic, applicationCount, hasApplied, userStatus);
         }
     }
 }

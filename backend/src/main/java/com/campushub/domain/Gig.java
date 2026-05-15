@@ -42,11 +42,9 @@ public class Gig {
     @NotEmpty(message = "At least one skill is required")
     private List<String> skillsRequired;
 
-    @NotNull(message = "PostedBy user ID is required")
     @Field("posted_by")
     private String postedBy;
 
-    @NotNull(message = "Status is required")
     @Field("status")
     private Status status = Status.OPEN;
 

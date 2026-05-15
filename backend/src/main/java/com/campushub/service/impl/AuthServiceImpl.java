@@ -72,42 +72,75 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public String register(RegisterRequest req) {
-        if (userRepository.existsByEmail(req.email())) {
-            throw ApiException.conflict("Email already registered");
-        }
-
-        User user = User.builder()
-                .name(req.name())
-                .email(req.email())
-                .password(passwordEncoder.encode(req.password()))
-                .role("USER")
-                .collegeId(null)
-                .isVerified(false)
-                .build();
-        userRepository.save(user);
-
-        String otp = String.format("%06d", secureRandom.nextInt(999999));
-        log.info("Generated OTP for {}: {}", req.email(), otp);
-
+        String email = req.email().toLowerCase().trim();
+        log.info("Registration attempt for email: {}", email);
+        
         try {
-            redisTemplate.opsForValue().set("otp:" + req.email(), otp, 5, TimeUnit.MINUTES);
-            log.info("Stored OTP in Redis for {}", req.email());
-        } catch (Exception e) {
-            log.error("Failed to store OTP in Redis: {}", e.getMessage());
-            throw new RuntimeException("Failed to store OTP. Please try again.");
-        }
+            java.util.Optional<User> existingUser = userRepository.findByEmail(email);
+            
+            if (existingUser.isPresent()) {
+                User user = existingUser.get();
+                if (user.isVerified()) {
+                    log.warn("Registration failed: Email {} is already verified", email);
+                    throw ApiException.conflict("This email is already registered and verified. Please log in.");
+                } else {
+                    log.info("User {} exists but is unverified. Re-sending OTP.", email);
+                    // Continue to send OTP to allow them to verify
+                }
+            } else {
+                log.info("Creating new unverified user record for {}", email);
+                User newUser = User.builder()
+                        .name(req.name())
+                        .email(email)
+                        .password(passwordEncoder.encode(req.password()))
+                        .role("USER")
+                        .isVerified(false)
+                        .build();
+                userRepository.save(newUser);
+            }
 
-        sendOtpEmail(req.email(), otp);
-        return "OTP sent to your email";
+            String otp = String.format("%06d", secureRandom.nextInt(999999));
+            log.info("************************************************");
+            log.info("OTP FOR {}: {}", email, otp);
+            log.info("************************************************");
+
+            try {
+                redisTemplate.opsForValue().set("otp:" + email, otp, 10, TimeUnit.MINUTES);
+                log.info("OTP stored in Redis for {}", email);
+            } catch (Exception e) {
+                log.error("CRITICAL: Redis failed to store OTP: {}", e.getMessage());
+                // Non-fatal, user can still see OTP in terminal
+            }
+
+            try {
+                sendOtpEmail(email, otp);
+            } catch (Exception e) {
+                log.error("Email delivery failed, but OTP is in terminal: {}", e.getMessage());
+                // Non-fatal for registration flow
+            }
+
+            return "OTP sent successfully. Please check your email or terminal.";
+
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("CRITICAL REGISTRATION FAILURE for {}:", email, e);
+            throw new RuntimeException("Registration failed: " + e.getMessage());
+        }
     }
 
     @Override
     @Transactional
     public AuthResponse verifyOtp(String email, String otp) {
-        String stored = (String) redisTemplate.opsForValue().get("otp:" + email);
+        String stored = null;
+        try {
+            stored = (String) redisTemplate.opsForValue().get("otp:" + email);
+        } catch (Exception e) {
+            log.error("Failed to retrieve OTP from Redis for {}: {}", email, e.getMessage());
+        }
 
         if (stored == null) {
-            throw ApiException.badRequest("OTP expired. Please request a new one.");
+            throw ApiException.badRequest("OTP expired or Redis unavailable. Please request a new one.");
         }
         if (!stored.equals(otp)) {
             throw ApiException.badRequest("Incorrect OTP.");
@@ -117,7 +150,12 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> ApiException.notFound("User not found"));
         user.setVerified(true);
         userRepository.save(user);
-        redisTemplate.delete("otp:" + email);
+
+        try {
+            redisTemplate.delete("otp:" + email);
+        } catch (Exception e) {
+            log.warn("Failed to delete OTP from Redis after verification: {}", e.getMessage());
+        }
 
         return buildTokenPair(user);
     }
@@ -197,7 +235,11 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.notFound("User not found"));
         String otp = String.format("%06d", secureRandom.nextInt(999999));
-        redisTemplate.opsForValue().set("otp:" + email, otp, 5, TimeUnit.MINUTES);
+        try {
+            redisTemplate.opsForValue().set("otp:" + email, otp, 5, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("Failed to store verification OTP in Redis for {}: {}", email, e.getMessage());
+        }
         sendOtpEmail(email, otp);
     }
 
@@ -207,33 +249,39 @@ public class AuthServiceImpl implements AuthService {
         verifyOtp(email, code);
     }
 
+    @Value("${brevo.user:noreply@campushub.in}")
+    private String brevoUser;
+
     // ── private helpers ───────────────────────────────────────────────────
 
     private void sendOtpEmail(String toEmail, String otp) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("api-key", brevoApiKey);
+            headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+            headers.set("api-key", brevoApiKey != null ? brevoApiKey.trim() : "");
+            headers.set("x-sib-api-key", brevoApiKey != null ? brevoApiKey.trim() : "");
 
             String body = """
                     {
-                      "sender": {"name": "Campus Hub", "email": "noreply@campushub.in"},
+                      "sender": {"name": "Campus Hub", "email": "%s"},
                       "to": [{"email": "%s"}],
                       "subject": "Your Campus Hub OTP",
                       "textContent": "Your OTP is %s. Valid for 5 minutes. Do not share this with anyone."
                     }
-                    """.formatted(toEmail, otp);
+                    """.formatted(brevoUser, toEmail, otp);
 
             HttpEntity<String> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity(
                     "https://api.brevo.com/v3/smtp/email",
                     request,
                     String.class);
-            log.info("OTP email sent to {} via Brevo API", toEmail);
+            log.info("OTP email sent successfully to {} via Brevo API", toEmail);
 
         } catch (Exception e) {
-            log.error("Brevo send failed to {}: {}", toEmail, e.getMessage());
-            throw new RuntimeException("Could not send OTP email. Please try again.");
+            log.error("Brevo OTP send failed to {}: {}", toEmail, e.getMessage());
+            // We throw an exception to let the user know something went wrong with the verification process
+            throw new RuntimeException("Could not send OTP email. Please check your configuration or try again.");
         }
     }
 

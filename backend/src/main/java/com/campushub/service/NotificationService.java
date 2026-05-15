@@ -8,7 +8,8 @@ import com.campushub.repository.NotificationRepository;
 import com.campushub.repository.UserRepository;
 import com.campushub.websocket.WebSocketSessionRegistry;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,11 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -55,9 +56,13 @@ public class NotificationService {
                     userId.toString(), "/queue/notifications", payload);
         } else {
             // Store for delivery on next connect (max 100 pending per user)
-            String key = "notif:" + userId;
-            redisTemplate.opsForList().rightPush(key, payload);
-            redisTemplate.opsForList().trim(key, -100, -1);
+            try {
+                String key = "notif:" + userId;
+                redisTemplate.opsForList().rightPush(key, payload);
+                redisTemplate.opsForList().trim(key, -100, -1);
+            } catch (Exception e) {
+                log.warn("Redis unavailable — offline notification for {} not queued: {}", userId, e.getMessage());
+            }
         }
     }
 
@@ -106,6 +111,3 @@ public class NotificationService {
                 n.getBody(), n.isRead(), n.getMetadata(), n.getCreatedAt());
     }
 }
-
-
-

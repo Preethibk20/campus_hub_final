@@ -209,36 +209,30 @@ const RegisterPage: React.FC = () => {
     }
   }
 
-  // Handle Cloudinary upload
-  const handleAvatarUpload = () => {
-    if (!window.cloudinary) {
-      toast.error('Cloudinary widget not loaded')
-      return
-    }
+  // Handle direct Cloudinary upload (Fix for tracking prevention)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
     setIsUploading(true)
-    
-    const widget = window.cloudinary.createUploadWidget({
-      cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
-      uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
-      sources: ['local', 'camera', 'google_drive'],
-      multiple: false,
-      maxFileSize: 5000000, // 5MB
-      cropping: true,
-      croppingAspectRatio: 1,
-      croppingValidateDimensions: true,
-    }, (error: any, result: any) => {
+    try {
+      const { uploadToCloudinary } = await import('@/lib/cloudinary')
+      const url = await uploadToCloudinary(file)
+      setAvatarUrl(url)
+      toast.success('Avatar uploaded successfully! ✨')
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      toast.error(error.message || 'Upload failed')
+    } finally {
       setIsUploading(false)
-      
-      if (!error && result.event === 'success') {
-        setAvatarUrl(result.info.secure_url)
-        toast.success('Avatar uploaded successfully!')
-      } else if (error) {
-        toast.error('Upload failed', error.message)
-      }
-    })
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
-    widget.open()
+  const triggerUpload = () => {
+    fileInputRef.current?.click()
   }
 
   // Format countdown

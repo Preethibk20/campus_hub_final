@@ -39,22 +39,29 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             try {
                 Claims claims = jwtUtil.validateToken(token);
-
-                // Check Redis blacklist
                 String userId = claims.getSubject();
-                String email  = claims.get("email", String.class);
                 String role   = claims.get("role", String.class);
                 if (role == null) role = "USER";
 
+                log.debug("JWT valid for user: {}, role: {}", userId, role);
+
                 var auth = new UsernamePasswordAuthenticationToken(
-                        userId, email,
+                        userId, null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                log.info("Successfully authenticated user: {} for {}", userId, request.getRequestURI());
 
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                log.warn("JWT Expired for {}: {}", request.getRequestURI(), e.getMessage());
+            } catch (io.jsonwebtoken.SignatureException e) {
+                log.warn("JWT Signature mismatch for {}: {}", request.getRequestURI(), e.getMessage());
             } catch (JwtException | IllegalArgumentException e) {
-                log.debug("Invalid JWT: {}", e.getMessage());
-                // Don't set auth — downstream will get 401 from security config
+                log.warn("Invalid JWT for {}: {}", request.getRequestURI(), e.getMessage());
+            }
+        } else {
+            if (request.getRequestURI().startsWith("/api/gigs/my") || request.getRequestURI().startsWith("/api/users/me")) {
+                log.warn("MISSING Authorization header for protected route: {}", request.getRequestURI());
             }
         }
         chain.doFilter(request, response);

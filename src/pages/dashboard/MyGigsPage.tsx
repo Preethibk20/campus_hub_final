@@ -65,6 +65,16 @@ const MyGigsPage: React.FC = () => {
   const [editingGig, setEditingGig] = useState<any | null>(null)
   const navigate = useNavigate()
   const toast = useToast()
+  
+  const uniqueCreatedGigs = React.useMemo(() => 
+    Array.from(new Map(createdGigs.map(gig => [gig.id || (gig as any).gigId, gig])).values()),
+    [createdGigs]
+  )
+
+  const uniqueAppliedGigs = React.useMemo(() => 
+    Array.from(new Map(appliedGigs.map(gig => [gig.id || (gig as any).gigId, gig])).values()),
+    [appliedGigs]
+  )
 
   useEffect(() => {
     fetchMyGigs()
@@ -166,7 +176,7 @@ const MyGigsPage: React.FC = () => {
                                         </Button>
                                     </div>
                                 ) : (
-                                    createdGigs.map((gig) => (
+                                    uniqueCreatedGigs.map((gig) => (
                                         <div key={gig.id} className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:shadow-slate-100 transition-all">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                 <div className="flex-1">
@@ -217,7 +227,7 @@ const MyGigsPage: React.FC = () => {
                                         <Button variant="secondary" size="sm" onClick={() => navigate('/explore')}>Explore Gigs</Button>
                                     </div>
                                 ) : (
-                                    appliedGigs.map((gig) => (
+                                    uniqueAppliedGigs.map((gig) => (
                                         <div key={gig.id} className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:shadow-slate-100 transition-all">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                 <div className="flex-1">

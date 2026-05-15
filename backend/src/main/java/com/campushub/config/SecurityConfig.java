@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 
@@ -41,26 +42,46 @@ public class SecurityConfig {
                         .contentTypeOptions(org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig::disable)
                         .addHeaderWriter((req, res) -> {
                             res.setHeader("X-Content-Type-Options", "nosniff");
-                            res.setHeader("X-Frame-Options", "DENY");
-                            res.setHeader("Referrer-Policy", "no-referrer");
-                            res.setHeader("Content-Security-Policy", "default-src 'self'");
+                            res.setHeader("X-Frame-Options", "SAMEORIGIN");
+                            res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+                            res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval' https://*.cloudinary.com; img-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; frame-src * https://*.cloudinary.com;");
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        
+                        // Explicitly protect authenticated endpoints
+                        .requestMatchers("/api/users/me", "/api/users/me/**").authenticated()
+                        .requestMatchers("/api/gigs/my", "/api/gigs/my/**").authenticated()
+                        .requestMatchers("/api/gigs/*/apply").authenticated()
+                        .requestMatchers("/api/gigs/*/interest").authenticated()
+                        .requestMatchers("/api/gigs/*/applications").authenticated()
+                        .requestMatchers("/api/gigs/*/applicants/**").authenticated()
+                        
+                        // Admin endpoints
+                        .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
+                        
+                        // Public endpoints
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/v1/auth/**",
-                                "/api/gigs/**",
                                 "/api/profile/**",
-                                "/api/matching/posts",            // public: browse hackathon posts
-                                "/api/matching/posts/{id}",       // public: view detail
-                                "/actuator/health",
-                                "/actuator/health/liveness",
-                                "/actuator/health/readiness",
-                                "/ws/**"
+                                "/api/matching/posts/**",
+                                "/actuator/health/**",
+                                "/ws/**",
+                                "/api/gigs", 
+                                "/api/gigs/*"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()  // /matching/suggestions, /requests → JWT
+                        
+                        // Any other request needs authentication
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, authException) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Authentication required\"}");
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -79,10 +100,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         var config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        
+        // Handle multiple origins from property
+        if (allowedOrigin != null && !allowedOrigin.isBlank()) {
+            config.setAllowedOrigins(java.util.Arrays.asList(allowedOrigin.split(",")));
+        } else {
+            config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        }
+        
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+        
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

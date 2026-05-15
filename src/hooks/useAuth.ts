@@ -59,13 +59,16 @@ function userFromProfileApi(data: Record<string, unknown>): User {
 }
 
 async function fetchAndSetUser(setUser: (u: User) => void) {
-  // Use Node.js backend for user profile fetching
   const token = useAuthStore.getState().token;
+  console.log("[useAuth] Fetching profile with token:", token ? "PRESENT" : "MISSING");
   const response = await fetch('/api/users/me', {
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  if (!response.ok) throw new Error('Failed to fetch user');
+  if (!response.ok) {
+    console.error("[useAuth] Profile fetch failed with status:", response.status);
+    throw new Error('Failed to fetch user');
+  }
   const data = await response.json();
   setUser(userFromProfileApi(data as Record<string, unknown>));
 }
@@ -121,9 +124,8 @@ export const useAuth = () => {
 
   const register = async (payload: RegisterAccountPayload) => {
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
-
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
            email: payload.email.trim(),
@@ -141,9 +143,8 @@ export const useAuth = () => {
 
   const resendOtp = async (email: string) => {
     try {
-      const response = await fetch('/api/auth/resend-otp', {
+      const response = await fetch('/api/auth/verify/send', {
         method: 'POST',
-
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() })
       });

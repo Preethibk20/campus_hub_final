@@ -18,6 +18,9 @@ apiClient.interceptors.request.use(
     const token = useAuthStore.getState().token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log(`[AXIOS] Injecting token for ${config.url}`);
+    } else {
+      console.warn(`[AXIOS] No token found for protected request to ${config.url}`);
     }
     return config
   },

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import apiClient from '@/api/client';
 import { useAuthStore } from './authStore';
 
 interface Gig {
@@ -69,7 +69,7 @@ export const useGigStore = create<GigState>((set, get) => ({
         params.append('skills', activeFilters.skills.join(','));
       }
       
-      const response = await axios.get(`${API_URL}?${params.toString()}`);
+      const response = await apiClient.get(`${API_URL}?${params.toString()}`);
       set({ gigs: response.data, loading: false });
     } catch (err: any) {
       set({ error: err.response?.data?.message || err.message, loading: false });
@@ -79,7 +79,7 @@ export const useGigStore = create<GigState>((set, get) => ({
   fetchGigById: async (id) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.get(`${API_URL}/${id}`);
+      const response = await apiClient.get(`${API_URL}/${id}`);
       set({ selectedGig: response.data, loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
@@ -89,26 +89,19 @@ export const useGigStore = create<GigState>((set, get) => ({
   createGig: async (data) => {
     set({ loading: true, error: null });
     try {
-      const token = useAuthStore.getState().token;
-      await axios.post(API_URL, data, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Re-fetch from server so the new gig shows up with poster details populated
-      const refreshed = await axios.get(API_URL);
+      await apiClient.post(API_URL, data);
+      const refreshed = await apiClient.get(API_URL);
       set({ gigs: refreshed.data, loading: false });
     } catch (err: any) {
       set({ error: err.response?.data?.message || err.message, loading: false });
-      throw err; // Re-throw so the form can catch it and show an error toast
+      throw err;
     }
   },
 
   deleteGig: async (id) => {
     set({ loading: true, error: null });
     try {
-      const token = useAuthStore.getState().token;
-      await axios.delete(`${API_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`${API_URL}/${id}`);
       set((state) => ({ 
         gigs: state.gigs.filter(g => g.id !== id), 
         loading: false 
@@ -120,11 +113,7 @@ export const useGigStore = create<GigState>((set, get) => ({
 
   expressInterest: async (id) => {
     try {
-      const token = useAuthStore.getState().token;
-      await axios.post(`${API_URL}/${id}/interest`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Update local state
+      await apiClient.post(`${API_URL}/${id}/interest`);
       set(state => ({
         selectedGig: state.selectedGig && state.selectedGig.id === id 
           ? { ...state.selectedGig, hasApplied: true, applicationCount: state.selectedGig.applicationCount + 1 }
@@ -137,10 +126,7 @@ export const useGigStore = create<GigState>((set, get) => ({
 
   fetchApplications: async (id) => {
     try {
-      const token = useAuthStore.getState().token;
-      const response = await axios.get(`${API_URL}/${id}/applications`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await apiClient.get(`${API_URL}/${id}/applications`);
       return response.data;
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Failed to fetch applications');
@@ -149,10 +135,7 @@ export const useGigStore = create<GigState>((set, get) => ({
 
   acceptApplicant: async (gigId, userId) => {
     try {
-      const token = useAuthStore.getState().token;
-      const response = await axios.patch(`${API_URL}/${gigId}/applicants/${userId}/accept`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await apiClient.patch(`${API_URL}/${gigId}/applicants/${userId}/accept`);
       set({ selectedGig: response.data });
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Failed to accept applicant');
@@ -161,10 +144,7 @@ export const useGigStore = create<GigState>((set, get) => ({
 
   rejectApplicant: async (gigId, userId) => {
     try {
-      const token = useAuthStore.getState().token;
-      const response = await axios.patch(`${API_URL}/${gigId}/applicants/${userId}/reject`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await apiClient.patch(`${API_URL}/${gigId}/applicants/${userId}/reject`);
       set({ selectedGig: response.data });
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Failed to reject applicant');

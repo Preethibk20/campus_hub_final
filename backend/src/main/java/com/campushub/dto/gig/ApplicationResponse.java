@@ -12,10 +12,9 @@ public record ApplicationResponse(
         String applicantName,
         String applicantAvatar,
         String applicantCollege,
+        String applicantBranch,
+        String applicantAcademicYear,
         String message,
         GigApplication.Status status,
         Instant createdAt
 ) {}
-
-
-

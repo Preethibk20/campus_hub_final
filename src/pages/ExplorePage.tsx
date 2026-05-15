@@ -50,6 +50,11 @@ const GigMarketplace: React.FC = () => {
   const { gigs, loading, error, fetchGigs } = useGigStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const uniqueGigs = React.useMemo(() => 
+    Array.from(new Map(gigs.map(gig => [gig.id || (gig as any).gigId, gig])).values()),
+    [gigs]
+  );
   
   const [localFilters, setLocalFilters] = useState({
     category: searchParams.get('category') || '',
@@ -207,7 +212,7 @@ const GigMarketplace: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {gigs.map((gig) => (
+          {uniqueGigs.map((gig) => (
             <div 
               key={gig.id}
               className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm hover:shadow-2xl hover:border-transparent hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full cursor-pointer"

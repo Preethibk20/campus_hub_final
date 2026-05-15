@@ -2,6 +2,7 @@ package com.campushub.controller;
 
 import com.campushub.domain.Gig;
 import com.campushub.dto.GigResponseDTO;
+import com.campushub.dto.gig.ApplicationResponse;
 import com.campushub.service.GigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -75,8 +76,8 @@ public class GigController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<GigResponseDTO>> getMyGigs(@AuthenticationPrincipal String currentUserId) {
-        return ResponseEntity.ok(gigService.getGigsByUser(currentUserId));
+    public ResponseEntity<com.campushub.dto.gig.MyGigsResponse> getMyGigs(@AuthenticationPrincipal String currentUserId) {
+        return ResponseEntity.ok(gigService.getMyGigs(currentUserId));
     }
 
     @PostMapping("/{id}/apply")
@@ -91,7 +92,7 @@ public class GigController {
     }
 
     @GetMapping("/{id}/applications")
-    public ResponseEntity<List<com.campushub.domain.User>> getApplications(
+    public ResponseEntity<List<ApplicationResponse>> getApplications(
             @PathVariable String id, 
             @AuthenticationPrincipal String currentUserId) {
         return ResponseEntity.ok(gigService.getApplicationsForGig(id, currentUserId));
