@@ -15,6 +15,16 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+      redis:
+        image: redis:7.0
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +40,11 @@ jobs:
         run: mvn verify --no-transfer-progress
         env:
           SPRING_PROFILES_ACTIVE: test
+          SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/campushub_test
+          SPRING_DATA_REDIS_URL: redis://localhost:6379
+          BREVO_API_KEY: dummy-key-for-ci
+          BREVO_USER: noreply@test.com
+          JWT_SECRET: c29tZS1zZWNyZXQta2V5LXRoYXQtaXMtYXQtbGVhc3QtMzItY2hhcmFjdGVycy1sb25n
 
       - name: Upload test reports
         if: always()
