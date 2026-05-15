@@ -27,9 +27,7 @@ jobs:
           cache: maven
 
       - name: Build and test (H2, test profile)
-        run: |
-          chmod +x mvnw
-          ./mvnw verify --no-transfer-progress
+        run: mvn verify --no-transfer-progress
         env:
           SPRING_PROFILES_ACTIVE: test
 
