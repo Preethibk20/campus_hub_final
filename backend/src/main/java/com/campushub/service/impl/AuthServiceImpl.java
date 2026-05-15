@@ -165,32 +165,27 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest req) {
         try {
             log.info("Login attempt for email: {}", req.email());
-            User user = userRepository.findByEmail(req.email())
-                    .orElseThrow(() -> {
-                        log.warn("Login failed: no user found for email {}", req.email());
-                        return new BadCredentialsException("Invalid email or password");
-                    });
-
-            log.info("User found: id={}, name={}, verified={}, passwordHash prefix={}", 
-                user.getId(), user.getName(), user.isVerified(),
-                user.getPassword() != null ? user.getPassword().substring(0, 10) : "NULL");
+            String email = req.email().toLowerCase().trim();
+            
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ApiException("Invalid email or password", HttpStatus.BAD_REQUEST));
 
             if (!passwordEncoder.matches(req.password(), user.getPassword())) {
-                log.warn("Login failed: password mismatch for {}", req.email());
-                throw new BadCredentialsException("Invalid email or password");
+                log.warn("Login failed: password mismatch for {}", email);
+                throw new ApiException("Invalid email or password", HttpStatus.BAD_REQUEST);
             }
 
             if (!user.isVerified()) {
-                throw new EmailNotVerifiedException("Please verify your email first.");
+                throw new ApiException("Please verify your email first.", HttpStatus.FORBIDDEN);
             }
 
             if (user.isBanned()) {
-                throw new AccountBannedException("Your account has been banned.");
+                throw new ApiException("Your account has been banned.", HttpStatus.FORBIDDEN);
             }
 
             return buildTokenPair(user);
 
-        } catch (BadCredentialsException | EmailNotVerifiedException | AccountBannedException e) {
+        } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
             log.error("Login failed for {}: {}", req.email(), e.getMessage(), e);
