@@ -63,7 +63,7 @@ class AuthServiceTest {
     @Test
     void register_success_sendsOtp() {
         when(collegeRepository.findByEmailDomain("college.edu")).thenReturn(Optional.of(college));
-        when(userRepository.existsByEmail("alice@college.edu")).thenReturn(false);
+        when(userRepository.findByEmail("alice@college.edu")).thenReturn(Optional.empty());
         when(userRepository.save(any())).thenReturn(user);
 
         String result = authService.register(
@@ -75,7 +75,7 @@ class AuthServiceTest {
     @Test
     void register_duplicateEmail_throwsConflict() {
         when(collegeRepository.findByEmailDomain("college.edu")).thenReturn(Optional.of(college));
-        when(userRepository.existsByEmail("alice@college.edu")).thenReturn(true);
+        when(userRepository.findByEmail("alice@college.edu")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(
                 new RegisterRequest("Alice", "alice@college.edu", "password123", null)))

@@ -428,7 +428,10 @@ public class GigService {
     }
 
     public void deleteGig(String id) {
-        gigRepository.deleteById(id);
+        findGigById(id).ifPresent(g -> {
+            g.setStatus(Gig.Status.CANCELLED);
+            gigRepository.save(g);
+        });
     }
 
     public List<GigResponseDTO> filterGigs(Gig.Category category, Gig.Type type, List<String> skills, String currentUserId) {

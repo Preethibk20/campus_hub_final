@@ -5,6 +5,7 @@ import com.campushub.domain.College;
 import com.campushub.domain.Gig;
 import com.campushub.domain.User;
 import com.campushub.repository.CollegeRepository;
+import com.campushub.repository.GigApplicationRepository;
 import com.campushub.repository.GigRepository;
 import com.campushub.repository.UserRepository;
 import com.campushub.security.JwtUtil;
@@ -37,12 +38,18 @@ class GigControllerTest {
     @Autowired CollegeRepository collegeRepository;
     @Autowired GigRepository gigRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired GigApplicationRepository gigApplicationRepository;
 
     private User testUser;
     private String accessToken;
 
     @BeforeEach
     void setUp() {
+        collegeRepository.deleteAll();
+        userRepository.deleteAll();
+        gigRepository.deleteAll();
+        gigApplicationRepository.deleteAll();
+
         College college = collegeRepository.save(College.builder()
                 .name("Test University").emailDomain("test.edu").build());
 
@@ -59,20 +66,31 @@ class GigControllerTest {
                 testUser.getId(), testUser.getEmail(), testUser.getRole());
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        gigApplicationRepository.deleteAll();
+        gigRepository.deleteAll();
+        userRepository.deleteAll();
+        collegeRepository.deleteAll();
+    }
+
     @Test
     void createGig_authenticated_returns201() throws Exception {
-        mockMvc.perform(multipart("/api/gigs")
-                        .file(new MockMultipartFile("attachments", "test.png",
-                                "image/png", new byte[100]))
-                        .param("type", "PAID")
-                        .param("title", "Java Tutoring")
-                        .param("description", "I can help with Java programming")
-                        .param("category", "TECH")
-                        .param("budgetMin", "500")
-                        .param("budgetMax", "1000")
-                        .param("timelineDays", "7")
+        String gigJson = """
+                {
+                  "type": "PAID",
+                  "title": "Java Tutoring",
+                  "description": "I can help with Java programming",
+                  "category": "TECH",
+                  "budget": 750.0,
+                  "skillsRequired": ["Java", "Spring Boot"]
+                }
+                """;
+
+        mockMvc.perform(post("/api/gigs")
                         .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(gigJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.title").value("Java Tutoring"))
@@ -81,12 +99,9 @@ class GigControllerTest {
 
     @Test
     void createGig_unauthenticated_returns401() throws Exception {
-        mockMvc.perform(multipart("/api/gigs")
-                        .param("type", "PAID")
-                        .param("title", "Java Tutoring")
-                        .param("description", "Help with Java")
-                        .param("category", "TECH")
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+        mockMvc.perform(post("/api/gigs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -106,14 +121,14 @@ class GigControllerTest {
                         .param("q", "python")
                         .param("category", "TECH"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test
     void searchGigs_noAuth_returns200() throws Exception {
         mockMvc.perform(get("/api/gigs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test

@@ -68,10 +68,9 @@ public class SecurityConfig {
                                 "/api/profile/**",
                                 "/api/matching/posts/**",
                                 "/actuator/health/**",
-                                "/ws/**",
-                                "/api/gigs", 
-                                "/api/gigs/*"
+                                "/ws/**"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gigs", "/api/gigs/*").permitAll()
                         
                         // Any other request needs authentication
                         .anyRequest().authenticated()

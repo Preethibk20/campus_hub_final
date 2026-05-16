@@ -73,11 +73,15 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public String register(RegisterRequest req) {
         String email = req.email().toLowerCase().trim();
-        log.info("Registration attempt for email: {}", email);
-        
+        String domain = email.substring(email.indexOf("@") + 1);
+        log.info("Registration attempt for email: {} with domain: {}", email, domain);
+
+        collegeRepository.findByEmailDomain(domain)
+                .orElseThrow(() -> ApiException.badRequest("Your college is not yet registered. Please contact support."));
+
         try {
             java.util.Optional<User> existingUser = userRepository.findByEmail(email);
-            
+
             if (existingUser.isPresent()) {
                 User user = existingUser.get();
                 if (user.isVerified()) {
