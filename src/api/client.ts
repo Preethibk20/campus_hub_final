@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores/authStore'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://campus-hub-final.onrender.com'
 
 export const apiClient = axios.create({
   // Use relative path to let Vite proxy handle it

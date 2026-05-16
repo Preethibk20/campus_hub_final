@@ -79,7 +79,7 @@ class SocketService {
       return
     }
 
-    const WS_URL = import.meta.env.VITE_WS_URL || '/ws'
+    const WS_URL = import.meta.env.VITE_WS_URL || 'https://campus-hub-final.onrender.com/ws'
     const sockjs = new SockJS(`${WS_URL}?token=${encodeURIComponent(token)}`)
     
     this.client = new Client({
