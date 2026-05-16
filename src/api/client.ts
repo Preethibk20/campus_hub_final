@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 export const apiClient = axios.create({
   // Use relative path to let Vite proxy handle it
-  // baseURL: API_BASE_URL, 
+  baseURL: API_BASE_URL, 
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ apiClient.interceptors.response.use(
           throw new Error('No refresh token available')
         }
 
-        const response = await axios.post(`/api/auth/refresh`, {
+        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
           refreshToken,
         })
 

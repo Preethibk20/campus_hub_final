@@ -79,7 +79,8 @@ class SocketService {
       return
     }
 
-    const sockjs = new SockJS(`/ws?token=${encodeURIComponent(token)}`)
+    const WS_URL = import.meta.env.VITE_WS_URL || '/ws'
+    const sockjs = new SockJS(`${WS_URL}?token=${encodeURIComponent(token)}`)
     
     this.client = new Client({
       webSocketFactory: () => sockjs as WebSocket,
