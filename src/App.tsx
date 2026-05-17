@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from '@/components/ui/Toast'
 import AppRouter from '@/router/AppRouter'
 import { useUIStore } from '@/stores/uiStore'
+import { Analytics } from "@vercel/analytics/react"
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-surface text-text-primary">
           <AppRouter />
           <Toaster />
+          <Analytics />
         </div>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
