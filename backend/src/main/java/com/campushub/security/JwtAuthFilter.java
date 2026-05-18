@@ -39,6 +39,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             try {
                 Claims claims = jwtUtil.validateToken(token);
+                
+                String jti = claims.getId();
+                if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti))) {
+                    log.warn("Attempt to use blacklisted JWT for {}", request.getRequestURI());
+                    throw new JwtException("Token has been blacklisted");
+                }
+
                 String userId = claims.getSubject();
                 String role   = claims.get("role", String.class);
                 if (role == null) role = "USER";
@@ -58,6 +65,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 log.warn("JWT Signature mismatch for {}: {}", request.getRequestURI(), e.getMessage());
             } catch (JwtException | IllegalArgumentException e) {
                 log.warn("Invalid JWT for {}: {}", request.getRequestURI(), e.getMessage());
+            } catch (Exception e) {
+                log.error("Unexpected error during JWT validation for {}: {}", request.getRequestURI(), e.getMessage());
             }
         } else {
             if (request.getRequestURI().startsWith("/api/gigs/my") || request.getRequestURI().startsWith("/api/users/me")) {
