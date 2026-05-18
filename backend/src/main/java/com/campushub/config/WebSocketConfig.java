@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.messaging.Message;
@@ -34,6 +35,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
     private final JwtUtil jwtUtil;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -68,10 +70,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             String token = param.substring(6);
                             try {
                                 Claims claims = jwtUtil.validateToken(token);
+                                String jti = claims.getId();
+                                if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti))) {
+                                    log.warn("WS Handshake rejected — token blacklisted");
+                                    return false;
+                                }
                                 attributes.put("userId", claims.getSubject());
                                 attributes.put("role",   claims.get("role", String.class));
                                 attributes.put("token",  token);
-                            } catch (JwtException e) {
+                            } catch (Exception e) {
                                 log.debug("WS handshake rejected — invalid token");
                                 return false;
                             }
@@ -119,13 +126,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     if (token != null) {
                         try {
                             Claims claims = jwtUtil.validateToken(token);
-                            String userId = claims.getSubject();
-                            String role   = claims.get("role", String.class);
-                            Principal principal = new UsernamePasswordAuthenticationToken(
-                                    userId, null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())));
-                            accessor.setUser(principal);
-                        } catch (JwtException e) {
+                            String jti = claims.getId();
+                            if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti))) {
+                                log.warn("STOMP CONNECT rejected — token blacklisted");
+                            } else {
+                                String userId = claims.getSubject();
+                                String role   = claims.get("role", String.class);
+                                Principal principal = new UsernamePasswordAuthenticationToken(
+                                        userId, null,
+                                        List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())));
+                                accessor.setUser(principal);
+                            }
+                        } catch (Exception e) {
                             log.debug("STOMP CONNECT rejected — invalid token");
                         }
                     }

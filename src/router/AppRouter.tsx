@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
+import AdminRoute from '@/components/routes/AdminRoute'
 
 // Eagerly load core pages to ensure they work
 import LandingPage from '@/pages/LandingPage'
@@ -31,6 +32,14 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 // Centralized Layout
 const DashboardLayout = lazy(() => import('@/components/layout/DashboardLayout'))
+const AdminLayout = lazy(() => import('@/components/layout/AdminLayout'))
+
+// Admin Pages
+const AdminOverviewPage = lazy(() => import('@/pages/admin/AdminOverviewPage'))
+const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage'))
+const AdminTransactionsPage = lazy(() => import('@/pages/admin/AdminTransactionsPage'))
+const AdminDisputesPage = lazy(() => import('@/pages/admin/AdminDisputesPage'))
+const AdminCollegesPage = lazy(() => import('@/pages/admin/AdminCollegesPage'))
 
 const Loading = () => (
   <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -261,6 +270,68 @@ const router = createBrowserRouter([
       <ProtectedRoute requireVerification>
         <Suspense fallback={<Loading />}><CreateGigPage /></Suspense>
       </ProtectedRoute>
+    ),
+  },
+
+  // Admin Routes
+  {
+    path: '/admin',
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<Loading />}>
+          <AdminLayout>
+            <AdminOverviewPage />
+          </AdminLayout>
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: '/admin/users',
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<Loading />}>
+          <AdminLayout>
+            <AdminUsersPage />
+          </AdminLayout>
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: '/admin/transactions',
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<Loading />}>
+          <AdminLayout>
+            <AdminTransactionsPage />
+          </AdminLayout>
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: '/admin/disputes',
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<Loading />}>
+          <AdminLayout>
+            <AdminDisputesPage />
+          </AdminLayout>
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: '/admin/colleges',
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<Loading />}>
+          <AdminLayout>
+            <AdminCollegesPage />
+          </AdminLayout>
+        </Suspense>
+      </AdminRoute>
     ),
   },
 
