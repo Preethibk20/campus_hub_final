@@ -120,13 +120,7 @@ const RegisterPage: React.FC = () => {
     if (numValue.length > 1) {
       const pasted = numValue.substring(0, 6)
       otpForm.setValue('otp', pasted)
-      
-      if (pasted.length === 6) {
-        setTimeout(() => onOTPSubmit({ otp: pasted }), 100)
-        otpRefs.current[5]?.focus()
-      } else {
-        otpRefs.current[Math.min(pasted.length, 5)]?.focus()
-      }
+      otpRefs.current[Math.min(pasted.length - 1, 5)]?.focus()
       return
     }
 
@@ -140,14 +134,6 @@ const RegisterPage: React.FC = () => {
       // Auto-focus next input
       if (numValue && index < 5) {
         otpRefs.current[index + 1]?.focus()
-      }
-      
-      // Auto-submit when all 6 digits are filled
-      if (index === 5 && numValue) {
-        const cur = otpForm.getValues('otp') ?? ''
-        const fullOTP = cur.substring(0, 5) + numValue
-        otpForm.setValue('otp', fullOTP)
-        setTimeout(() => onOTPSubmit({ otp: fullOTP }), 100)
       }
     }
   }
