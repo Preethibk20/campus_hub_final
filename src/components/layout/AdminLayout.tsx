@@ -13,7 +13,11 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
-const AdminLayout: React.FC = () => {
+interface AdminLayoutProps {
+  children?: React.ReactNode
+}
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -109,7 +113,7 @@ const AdminLayout: React.FC = () => {
 
         {/* Page Content */}
         <div className="p-8">
-          <Outlet />
+          {children || <Outlet />}
         </div>
       </main>
     </div>
