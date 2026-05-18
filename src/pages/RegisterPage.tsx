@@ -56,6 +56,7 @@ const RegisterPage: React.FC = () => {
   const [otpCountdown, setOtpCountdown] = useState(300) // 5 minutes
   const [avatarUrl, setAvatarUrl] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const toast = useToast()
@@ -160,6 +161,8 @@ const RegisterPage: React.FC = () => {
 
   // Handle OTP submission
   const onOTPSubmit = async (data: OTPFormData) => {
+    if (isVerifying) return
+    setIsVerifying(true)
     setOtpError('') // Clear previous errors
     try {
       const result = await verifyOTP(registeredEmail, data.otp)
@@ -169,10 +172,12 @@ const RegisterPage: React.FC = () => {
         navigate('/dashboard', { replace: true })
       } else {
         setOtpError(result.error || 'Verification failed')
+        setIsVerifying(false)
       }
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Verification failed'
       setOtpError(errorMsg)
+      setIsVerifying(false)
     }
   }
 
@@ -408,10 +413,10 @@ const RegisterPage: React.FC = () => {
 
                     <button
                       type="submit"
-                      disabled={currentOTP.length !== 6 || otpForm.formState.isSubmitting}
+                      disabled={currentOTP.length !== 6 || isVerifying || otpForm.formState.isSubmitting}
                       className="w-full py-4 px-4 bg-[#0C0E13] text-[#C8F53C] font-black rounded-xl hover:bg-[#1C2030] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-black/10"
                     >
-                      {otpForm.formState.isSubmitting ? (
+                      {isVerifying || otpForm.formState.isSubmitting ? (
                         <>
                           <div className="w-5 h-5 border-2 border-[#C8F53C] border-t-transparent rounded-full animate-spin" />
                           Verifying...
