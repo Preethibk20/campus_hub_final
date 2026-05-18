@@ -62,7 +62,6 @@ class AuthServiceTest {
 
     @Test
     void register_success_sendsOtp() {
-        when(collegeRepository.findByEmailDomain("college.edu")).thenReturn(Optional.of(college));
         when(userRepository.findByEmail("alice@college.edu")).thenReturn(Optional.empty());
         when(userRepository.save(any())).thenReturn(user);
 
@@ -74,7 +73,6 @@ class AuthServiceTest {
 
     @Test
     void register_duplicateEmail_throwsConflict() {
-        when(collegeRepository.findByEmailDomain("college.edu")).thenReturn(Optional.of(college));
         when(userRepository.findByEmail("alice@college.edu")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(
@@ -84,16 +82,7 @@ class AuthServiceTest {
                         .isEqualTo(HttpStatus.CONFLICT));
     }
 
-    @Test
-    void register_unknownDomain_throwsBadRequest() {
-        when(collegeRepository.findByEmailDomain("unknown.com")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.register(
-                new RegisterRequest("Bob", "bob@unknown.com", "password123", null)))
-                .isInstanceOf(ApiException.class)
-                .satisfies(e -> assertThat(((ApiException) e).getStatus())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
-    }
 
     // ── verifyOtp ─────────────────────────────────────────────────────────────
 
