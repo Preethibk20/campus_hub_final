@@ -20,7 +20,7 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${jwt.secret:super_secret_jwt_key_for_campus_hub}") String secret,
-            @Value("${jwt.access-token-expiry-ms:3600000}") long accessTtlMs,
+            @Value("${jwt.access-token-expiry-ms:900000}") long accessTtlMs,
             @Value("${jwt.refresh-token-expiry-ms:604800000}") long refreshTtlMs) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.accessTtlMs = accessTtlMs;
