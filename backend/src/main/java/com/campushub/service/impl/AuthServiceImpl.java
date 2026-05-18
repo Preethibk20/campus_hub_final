@@ -76,9 +76,6 @@ public class AuthServiceImpl implements AuthService {
         String domain = email.substring(email.indexOf("@") + 1);
         log.info("Registration attempt for email: {} with domain: {}", email, domain);
 
-        collegeRepository.findByEmailDomain(domain)
-                .orElseThrow(() -> ApiException.badRequest("Your college is not yet registered. Please contact support."));
-
         try {
             java.util.Optional<User> existingUser = userRepository.findByEmail(email);
 
