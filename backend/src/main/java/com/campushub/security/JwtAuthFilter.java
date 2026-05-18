@@ -44,7 +44,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtUtil.validateToken(token);
                 
                 String jti = claims.getId();
-                if (jti != null && Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti))) {
+                boolean isBlacklisted = false;
+                if (jti != null) {
+                    try {
+                        isBlacklisted = Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti));
+                    } catch (Exception e) {
+                        log.warn("Redis unavailable for blacklist check (fail-open) for JTI {}: {}", jti, e.getMessage());
+                    }
+                }
+                if (isBlacklisted) {
                     log.warn("Attempt to use blacklisted JWT for {}", request.getRequestURI());
                     throw new JwtException("Token has been blacklisted");
                 }
