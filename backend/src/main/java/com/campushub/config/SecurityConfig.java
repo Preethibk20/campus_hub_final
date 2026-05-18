@@ -61,15 +61,16 @@ public class SecurityConfig {
                         // Admin endpoints
                         .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
                         
-                        // Public endpoints
+                        // Public endpoints — NO private user data
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/v1/auth/**",
-                                "/api/profile/**",
                                 "/api/matching/posts/**",
                                 "/actuator/health/**",
                                 "/ws/**"
                         ).permitAll()
+                        // Public profile — authenticated users only (prevents anonymous enumeration)
+                        .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gigs", "/api/gigs/*").permitAll()
                         
                         // Any other request needs authentication

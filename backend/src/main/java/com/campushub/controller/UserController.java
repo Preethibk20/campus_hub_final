@@ -1,5 +1,6 @@
 package com.campushub.controller;
 
+import com.campushub.dto.user.PublicProfileResponse;
 import com.campushub.dto.user.SkillRequest;
 import com.campushub.dto.user.UpdateProfileRequest;
 import com.campushub.dto.user.UserProfileResponse;
@@ -32,10 +33,18 @@ public class UserController {
         return ResponseEntity.ok(userService.updateMe(userId, req));
     }
 
-    /** GET /api/profile/:id — public */
+    /** GET /api/profile/:id — requires login, but strips email/role for privacy */
     @GetMapping("/api/profile/{id}")
-    public ResponseEntity<UserProfileResponse> getPublicProfile(@PathVariable String id) {
-        return ResponseEntity.ok(userService.getPublicProfile(id));
+    public ResponseEntity<PublicProfileResponse> getPublicProfile(@PathVariable String id) {
+        UserProfileResponse full = userService.getPublicProfile(id);
+        PublicProfileResponse pub = new PublicProfileResponse(
+                full.id(), full.name(), full.bio(), full.college(),
+                full.academicYear(), full.branch(), full.skills(), full.activeSkills(),
+                full.domains(), full.availability(), full.profilePicUrl(),
+                full.linkedinUrl(), full.githubUrl(), full.portfolioUrl(),
+                full.hourlyRate(), full.reviewCount(), full.avgRating()
+        );
+        return ResponseEntity.ok(pub);
     }
 
     /** DELETE /api/users/me/skills/:skillId */

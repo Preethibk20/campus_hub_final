@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.campushub.repository.UserRepository;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,10 +24,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate) {
+    public JwtAuthFilter(JwtUtil jwtUtil, RedisTemplate<String, Object> redisTemplate, UserRepository userRepository) {
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -47,17 +50,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
 
                 String userId = claims.getSubject();
-                String role   = claims.get("role", String.class);
-                if (role == null) role = "USER";
 
-                log.debug("JWT valid for user: {}, role: {}", userId, role);
+                // Re-read role from DB — never trust the role baked in the JWT token
+                // This prevents a demoted/banned user from retaining elevated privileges
+                String liveRole;
+                try {
+                    liveRole = userRepository.findById(userId)
+                            .map(u -> u.getRole() != null ? u.getRole().toUpperCase() : "USER")
+                            .orElse(null);
+                } catch (Exception e) {
+                    log.warn("DB role lookup failed for user {}, falling back to JWT claim", userId);
+                    liveRole = claims.get("role", String.class);
+                }
+
+                if (liveRole == null) {
+                    log.warn("User {} not found in DB, rejecting token", userId);
+                    chain.doFilter(request, response);
+                    return;
+                }
+
+                log.debug("JWT valid for user: {}, live role from DB: {}", userId, liveRole);
 
                 var auth = new UsernamePasswordAuthenticationToken(
                         userId, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                        List.of(new SimpleGrantedAuthority("ROLE_" + liveRole))
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                log.info("Successfully authenticated user: {} for {}", userId, request.getRequestURI());
+                log.info("Successfully authenticated user: {} (role={}) for {}", userId, liveRole, request.getRequestURI());
 
             } catch (io.jsonwebtoken.ExpiredJwtException e) {
                 log.warn("JWT Expired for {}: {}", request.getRequestURI(), e.getMessage());

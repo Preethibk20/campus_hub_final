@@ -10,7 +10,9 @@ import com.campushub.repository.GigRepository;
 import com.campushub.repository.UserRepository;
 import com.campushub.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,7 +32,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestConfig.class)
+@Tag("integration")
+@DisabledIf(value = "isLocalMongoUnavailable", disabledReason = "Local MongoDB not running — skipping integration tests")
 class GigControllerTest {
+
+    /** Returns true when local MongoDB (127.0.0.1:27017) cannot be reached. */
+    static boolean isLocalMongoUnavailable() {
+        try (var sock = new java.net.Socket()) {
+            sock.connect(new java.net.InetSocketAddress("127.0.0.1", 27017), 500);
+            return false; // reachable → do NOT disable
+        } catch (Exception e) {
+            return true;  // not reachable → disable
+        }
+    }
 
     @Autowired MockMvc mockMvc;
     @Autowired JwtUtil jwtUtil;
