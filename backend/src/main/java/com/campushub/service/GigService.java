@@ -336,7 +336,7 @@ public class GigService {
         if (applicant != null && applicant.getEmail() != null) {
             sendEmail(applicant.getEmail(), 
                 "Application Accepted - " + gig.getTitle(), 
-                "Congratulations %s! 🎉\n\nYour application for '%s' has been accepted by the poster.\n\nYou can now message them to discuss next steps.\n\nBest,\nCampus Hub Team"
+                "Congratulations %s! 🎉\n\nYour application for '%s' has been accepted by the gig creator.\n\nYou can now message them to discuss next steps.\n\nBest regards,\nCampus Hub Team"
                     .formatted(applicant.getName(), gig.getTitle()));
         }
 
@@ -365,7 +365,7 @@ public class GigService {
         if (applicant != null && applicant.getEmail() != null) {
             sendEmail(applicant.getEmail(), 
                 "Application Status Update - " + gig.getTitle(), 
-                "Hi %s,\n\nThank you for your interest in '%s'. The poster has decided to move forward with other applicants at this time.\n\nDon't give up! There are many other gigs waiting for your skills on Campus Hub.\n\nBest,\nCampus Hub Team"
+                "Hi %s,\n\nThank you for your interest in '%s'. The gig creator has decided to move forward with other applicants at this time.\n\nDon't give up! There are many other gigs waiting for your skills on Campus Hub.\n\nBest regards,\nCampus Hub Team"
                     .formatted(applicant.getName(), gig.getTitle()));
         }
 
