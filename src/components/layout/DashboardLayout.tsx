@@ -41,7 +41,6 @@ const DashboardLayout: React.FC<{ children?: React.ReactNode }> = ({ children })
     { icon: MessageSquare, label: 'Messages', path: '/dashboard/inbox', badge: 0 },
     { icon: Bell, label: 'Notifications', path: '/dashboard/notifications', badge: 0 },
     { icon: Wallet, label: 'Wallet', path: '/dashboard/wallet' },
-    { icon: User, label: 'My Profile', path: '/dashboard/profile' },
   ]
 
   const handleLogout = () => {
@@ -85,7 +84,7 @@ const DashboardLayout: React.FC<{ children?: React.ReactNode }> = ({ children })
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:flex-shrink-0 lg:translate-x-0 ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
@@ -120,7 +119,7 @@ const DashboardLayout: React.FC<{ children?: React.ReactNode }> = ({ children })
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-1">
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => (
               <NavItem key={item.path} item={item} />
             ))}
@@ -128,19 +127,14 @@ const DashboardLayout: React.FC<{ children?: React.ReactNode }> = ({ children })
 
           {/* Bottom actions */}
           <div className="px-4 py-4 border-t border-gray-200 space-y-1">
-            <button
-              onClick={() => navigate('/dashboard/settings')}
-              className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-900"
-            >
-              <Settings className="w-5 h-5 mr-3" />
-              Settings
-            </button>
+            <NavItem item={{ icon: User, label: 'My Profile', path: '/dashboard/profile' }} />
+            <NavItem item={{ icon: Settings, label: 'Settings', path: '/dashboard/settings' }} />
             <button
               onClick={handleLogout}
-              className="w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50"
+              className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-600 rounded-lg hover:bg-red-50 transition-colors"
             >
-              <LogOut className="w-5 h-5 mr-3" />
-              Logout
+              <LogOut className="w-5 h-5 mr-3 text-red-600" />
+              <span className="flex-1 text-left">Logout</span>
             </button>
           </div>
         </div>
