@@ -416,7 +416,7 @@ const LandingPage: React.FC = () => {
           <div className="footer-bottom">
             <p>&copy; 2026 Campus Hub. All rights reserved.</p>
             <div className="footer-built">
-              Built with <span className="footer-lime">❤️</span> for students, by students
+              Built with <span className="footer-lime">❤️</span> for students, by Preethi B K 
             </div>
           </div>
         </div>
