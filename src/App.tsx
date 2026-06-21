@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/Toast'
 import AppRouter from '@/router/AppRouter'
 import { useUIStore } from '@/stores/uiStore'
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App: React.FC = () => {
           <AppRouter />
           <Toaster />
           <Analytics />
+          <SpeedInsights />
         </div>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
